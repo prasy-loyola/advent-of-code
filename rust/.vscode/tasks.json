@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"subcommand": "run",
+			"options": {
+				"shell": {
+					"args": [
+						"--bin",
+						"${fileBasenameNoExtension}"
+					]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Rust: cargo run - rust"
+		},
+		{
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"run",
+				"--bin",
+				"${fileBasenameNoExtension}"
+			],
+			"label": "Run current file ",
+			"problemMatcher": [
+				"$rustc"
+			]
+		}
+	]
+}
