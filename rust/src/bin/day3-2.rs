@@ -31,7 +31,7 @@ fn read_input_from_file() -> Result<String, io::Error> {
 
 
 fn get_one_count(lines: &Vec<String>) -> Vec<usize>{
-    let mut count = lines.len();
+    let count = lines.len();
     let mut one_count: Vec<usize> = vec![0; NUM_OF_DIGITS];
     for line in lines {
         let mut chars = line.chars();
