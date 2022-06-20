@@ -4,29 +4,9 @@ use std::io::Read;
 
 const NUM_OF_DIGITS: usize = 12;
 
+mod inputs;
 fn _get_input() -> Result<String, io::Error> {
-    return read_input_from_file();
-
-    return Ok("00100
-11110
-10110
-10111
-10101
-01111
-00111
-11100
-10000
-11001
-00010
-01010"
-        .to_string());
-}
-
-fn read_input_from_file() -> Result<String, io::Error> {
-    let mut f = File::open("src/bin/day3.txt")?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-    Ok(s)
+    inputs::get_input("day3")
 }
 
 

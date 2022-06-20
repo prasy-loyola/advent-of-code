@@ -2,30 +2,11 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 
+mod inputs;
 fn _get_input() -> Result<String, io::Error> {
-    return read_input_from_file();
-
-    return Ok("00100
-11110
-10110
-10111
-10101
-01111
-00111
-11100
-10000
-11001
-00010
-01010"
-        .to_string());
+    inputs::get_input("day3")
 }
 
-fn read_input_from_file() -> Result<String, io::Error> {
-    let mut f = File::open("src/bin/day3.txt")?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-    Ok(s)
-}
 
 fn main() {
     let lines: Vec<String> = _get_input()

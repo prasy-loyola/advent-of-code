@@ -1,10 +1,8 @@
-use std::fs::File;
-use std::io::Read;
 use std::{io, vec};
 
 mod inputs;
 fn _get_input() -> Result<String, io::Error> {
-  inputs::get_input("day4-sample") 
+  inputs::get_input("day4") 
 }
 
 #[derive(Debug)]

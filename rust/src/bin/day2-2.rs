@@ -2,23 +2,9 @@ use std::fs::File;
 use std::io;
 use std::io::Read;
 
+mod inputs;
 fn _get_input() -> Result<String, io::Error> {
-    return read_input_from_file();
-
-    return Ok("forward 5
-down 5
-forward 8
-up 3
-down 8
-forward 2".to_string());
-}
-
-
-fn read_input_from_file() -> Result<String, io::Error> {
-    let mut f = File::open("src/bin/day2.txt")?;
-    let mut s = String::new();
-    f.read_to_string(&mut s)?;
-    Ok(s)
+    inputs::get_input("day2")
 }
 
 #[derive(Debug)]
