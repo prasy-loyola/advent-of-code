@@ -8,19 +8,6 @@ import (
 	"os"
 )
 
-type TokenType int8
-
-const (
-	Number TokenType = iota
-	TokenList
-	Word
-)
-
-type Token = struct {
-	tType TokenType
-	text  string
-}
-
 type Game = struct {
 	id    int
 	red   int
@@ -31,84 +18,10 @@ type Game = struct {
 
 // expect("Game"), expect(" "), expect(Number), expect(": "), expect(Number), expect(("red", "green", "blue")), expect(";")
 
-func expectWord(text string, pos int, prefix string) (string, int, error) {
-
-	if pos >= len(text) || len(prefix) > len(text)+pos {
-		return "", pos, errors.New("Not enough text")
-	}
-
-	for i := 0; i < len(prefix); i++ {
-		if text[i+pos] != prefix[i] {
-            return "", pos, fmt.Errorf("Expected: '%s' but found character: '%c' at pos: '%d'", prefix, text[i+pos], i+pos)
-		}
-	}
-
-	//log.Printf("INFO: found word '%s' at %d", prefix, pos)
-
-	return prefix, pos + len(prefix), nil
-}
-
-func expectOneOf(text string, pos int, options []string) (string, int, error) {
-
-	for _, option := range options {
-		if _, newPos, err := expectWord(text, pos, option); err == nil {
-			return option, newPos, err
-		}
-	}
-	return text, pos, nil
-}
-
-func expectCharBetween(text string, pos int, low byte, high byte) (byte, int, error) {
-
-	if pos >= len(text) {
-		return 0, pos, errors.New("No text left")
-	}
-	char := text[pos]
-
-	if char < low || char > high {
-		return char, pos, fmt.Errorf("Expected Number but found '%c'", char)
-	}
-
-	//log.Printf("INFO: found char '%c' at %d", char, pos)
-	return char, pos + 1, nil
-}
-
-func expectNumber(text string, pos int) (int, int, error) {
-	num := 0
-
-	if pos >= len(text) {
-		return 0, pos, errors.New("No text left")
-	}
-
-	char, newPos, err := expectCharBetween(text, pos, '0', '9')
-	if err != nil {
-		return 0, pos, err
-	}
-	num = num*10 + int(char-'0')
-
-	for {
-		char, newPos, err = expectCharBetween(text, newPos, '0', '9')
-		if err != nil {
-			break
-		}
-		num = num*10 + int(char-'0')
-	}
-
-	return num, newPos, nil
-}
-
-
-func peek(line string, pos int) (byte, int, error) {
-    if pos >= len(line) {
-        return 0, pos, fmt.Errorf("Not enough text")
-    }
-    return line[pos], pos, nil
-
-}
 func parseSet(line string, pos int) (int, int, int, int, error) {
 
     var red, green, blue int
-    char, newPos, err := peek(line, pos)
+    char, newPos, err := Peek(line, pos)
     if err != nil {
         return 0, 0, 0, pos, fmt.Errorf("Couldn't parse Set\n\t%s", err.Error())
     }
@@ -125,11 +38,11 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
         if pos > len(line) {
             break
         }
-        num, newPos, err = expectNumber(line, newPos)
+        num, newPos, err = ExpectNumber(line, newPos)
         if err != nil {
             return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
-        color, newPos, err = expectOneOf(line, newPos, []string{" red"," blue", " green"})
+        color, newPos, err = ExpectOneOf(line, newPos, []string{" red"," blue", " green"})
         switch color {
         case " red":
             red = num
@@ -141,12 +54,12 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
             green = num
             break
         }
-        char, newPos, err = peek(line, newPos)
+        char, newPos, err = Peek(line, newPos)
         if err != nil || char == ';' || char == '\n' {
             newPos ++;
             break
         }
-        _, newPos, err = expectWord(line, newPos, ", ")
+        _, newPos, err = ExpectWord(line, newPos, ", ")
         if err != nil {
             return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
@@ -166,19 +79,19 @@ func parseGame(line string) (Game, error) {
 	}
 
     log.Printf("INFO: parsing line %s", line)
-	_, pos, err := expectWord(line, 0, "Game ")
+	_, pos, err := ExpectWord(line, 0, "Game ")
 	if err != nil {
 		return game, errors.New("Invalid line: Not a game data")
 	}
 
-	id, pos, err := expectNumber(line, pos)
+	id, pos, err := ExpectNumber(line, pos)
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: No game number found\n\t%s", err.Error())
 	}
 	game.id = id
 
 
-    _, pos, err = expectWord(line, pos, ":")
+    _, pos, err = ExpectWord(line, pos, ":")
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: \n\t%s", err.Error())
 	}
