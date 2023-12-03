@@ -26,6 +26,7 @@ type Game = struct {
 	red   int
 	green int
 	blue  int
+    power int64
 }
 
 // expect("Game"), expect(" "), expect(Number), expect(": "), expect(Number), expect(("red", "green", "blue")), expect(";")
@@ -161,6 +162,7 @@ func parseGame(line string) (Game, error) {
 		red:   0,
 		green: 0,
 		blue:  0,
+        power: 0,
 	}
 
     log.Printf("INFO: parsing line %s", line)
@@ -203,6 +205,7 @@ func parseGame(line string) (Game, error) {
             game.blue = blue
         }
     }
+    game.power = int64(game.red) * int64(game.green) * int64(game.blue)
 
 	return game, nil
 }
@@ -216,6 +219,7 @@ func main() {
 
 	reader := bufio.NewReader(input)
 	sum := 0
+	powerSum := int64(0)
 	expectedRed := 12
 	expectedGreen := 13
 	expectedBlue := 14
@@ -234,6 +238,9 @@ func main() {
 		}
 		fmt.Println(game)
 
+
+        powerSum += game.power
+
 		if game.red <= expectedRed &&
 			game.green <= expectedGreen &&
 			game.blue <= expectedBlue {
@@ -243,5 +250,6 @@ func main() {
 	}
 
     log.Printf("INFO: Answer %d", sum)
+    log.Printf("INFO: Answer Total power %d", powerSum)
 
 }
