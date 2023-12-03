@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+    p "parser"
 )
 
 type Game = struct {
@@ -16,12 +17,10 @@ type Game = struct {
     power int64
 }
 
-// expect("Game"), expect(" "), expect(Number), expect(": "), expect(Number), expect(("red", "green", "blue")), expect(";")
-
 func parseSet(line string, pos int) (int, int, int, int, error) {
 
     var red, green, blue int
-    char, newPos, err := Peek(line, pos)
+    char, newPos, err := p.Peek(line, pos)
     if err != nil {
         return 0, 0, 0, pos, fmt.Errorf("Couldn't parse Set\n\t%s", err.Error())
     }
@@ -38,11 +37,11 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
         if pos > len(line) {
             break
         }
-        num, newPos, err = ExpectNumber(line, newPos)
+        num, newPos, err = p.ExpectNumber(line, newPos)
         if err != nil {
             return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
-        color, newPos, err = ExpectOneOf(line, newPos, []string{" red"," blue", " green"})
+        color, newPos, err = p.ExpectOneOf(line, newPos, []string{" red"," blue", " green"})
         switch color {
         case " red":
             red = num
@@ -54,12 +53,12 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
             green = num
             break
         }
-        char, newPos, err = Peek(line, newPos)
+        char, newPos, err = p.Peek(line, newPos)
         if err != nil || char == ';' || char == '\n' {
             newPos ++;
             break
         }
-        _, newPos, err = ExpectWord(line, newPos, ", ")
+        _, newPos, err = p.ExpectWord(line, newPos, ", ")
         if err != nil {
             return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
@@ -79,19 +78,19 @@ func parseGame(line string) (Game, error) {
 	}
 
     log.Printf("INFO: parsing line %s", line)
-	_, pos, err := ExpectWord(line, 0, "Game ")
+	_, pos, err := p.ExpectWord(line, 0, "Game ")
 	if err != nil {
 		return game, errors.New("Invalid line: Not a game data")
 	}
 
-	id, pos, err := ExpectNumber(line, pos)
+	id, pos, err := p.ExpectNumber(line, pos)
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: No game number found\n\t%s", err.Error())
 	}
 	game.id = id
 
 
-    _, pos, err = ExpectWord(line, pos, ":")
+    _, pos, err = p.ExpectWord(line, pos, ":")
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: \n\t%s", err.Error())
 	}
@@ -124,7 +123,7 @@ func parseGame(line string) (Game, error) {
 }
 
 func main() {
-	filepath := "day2-1.input.txt"
+	filepath := "input.txt"
 	input, err := os.Open(filepath)
 	if err != nil {
 		panic("Not able to read file")
