@@ -16,10 +16,10 @@ type enginePart = struct {
 }
 
 type marker = struct {
-	markerType byte
-	row        int
-	position   int
-    nearbyParts []*enginePart
+	markerType  byte
+	row         int
+	position    int
+	nearbyParts []*enginePart
 }
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	for {
 		lineBytes, err := reader.ReadBytes('\n')
 		line := string(lineBytes)
-	//	log.Printf("INFO: processing line %s", line)
+		//	log.Printf("INFO: processing line %s", line)
 		if err != nil {
 			break
 		}
@@ -79,25 +79,27 @@ func main() {
 
 	dummyParts := make([]enginePart, 0)
 	prevRowParts := &dummyParts
-    puzzle1Result := 0
+	puzzle1Result := 0
 
-    var currRowParts *[]enginePart
-    var nextRowParts  *[]enginePart
-  
-    partsGrid = append(partsGrid, dummyParts)
+	var currRowParts *[]enginePart
+	var nextRowParts *[]enginePart
+
+	partsGrid = append(partsGrid, dummyParts)
 	for row := 0; row < rowNum-1; row++ {
 		currRowParts = &partsGrid[row]
 		nextRowParts = &partsGrid[row+1]
-		markers := markerGrid[row]
-		for i := range markers {
-			currMarker := &markers[i]
+		markers := &markerGrid[row]
+		for i := range *markers {
+			currMarker := &(*markers)[i]
 			for _, partRow := range []*[]enginePart{prevRowParts, currRowParts, nextRowParts} {
 				for i := 0; i < len(*partRow); i++ {
 					part := (*partRow)[i]
-                    currMarker.nearbyParts = append(currMarker.nearbyParts, &part)
-					if !part.valid && currMarker.position >= part.start-1 && currMarker.position <= part.end+1 {
-						part.valid = true
-                        puzzle1Result += part.number
+					if currMarker.position >= part.start-1 && currMarker.position <= part.end+1 {
+					    currMarker.nearbyParts = append(currMarker.nearbyParts, &part)
+						if !part.valid {
+							part.valid = true
+							puzzle1Result += part.number
+						}
 					}
 				}
 
@@ -106,7 +108,20 @@ func main() {
 		}
 		prevRowParts = currRowParts
 	}
-    log.Printf("INFO: Result %d", puzzle1Result)
+	log.Printf("INFO: Puzzle1 Result %d", puzzle1Result)
+
+	puzzle2Result := int64(0)
+	for r := range markerGrid {
+		markers := &markerGrid[r]
+		for i := range *markers {
+			currMarker := &(*markers)[i]
+			if currMarker.markerType == '*' && len(currMarker.nearbyParts) == 2 {
+				puzzle2Result += int64((currMarker.nearbyParts[0].number) * (currMarker.nearbyParts[1].number))
+			}
+		}
+	}
+
+	log.Printf("INFO: Puzzle2 Result: %d", puzzle2Result)
 }
 
 /*
