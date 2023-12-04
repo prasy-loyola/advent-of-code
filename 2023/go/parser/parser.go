@@ -3,6 +3,22 @@ import (
     "errors"
     "fmt"
 )
+
+
+func Skip(text string, pos int, char byte) (int, error) {
+	if pos >= len(text) {
+		return pos, fmt.Errorf("No text left")
+	}
+
+    for ; pos < len(text); pos++ {
+        if text[pos] != char {
+            break
+        }
+    }
+
+    return pos, nil
+
+}
 func ExpectWord(text string, pos int, prefix string) (string, int, error) {
 
 	if pos >= len(text) || len(prefix) > len(text)+pos {
