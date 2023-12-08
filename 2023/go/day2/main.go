@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-    p "parser"
+    parsermod "parser"
 )
 
 type Game = struct {
@@ -17,16 +17,16 @@ type Game = struct {
     power int64
 }
 
-func parseSet(line string, pos int) (int, int, int, int, error) {
+func parseSet(p *parsermod.Parser) (int, int, int, error) {
 
     var red, green, blue int
-    char, newPos, err := p.Peek(line, pos)
+    char, err := p.Peek()
     if err != nil {
-        return 0, 0, 0, pos, fmt.Errorf("Couldn't parse Set\n\t%s", err.Error())
+        return 0, 0, 0, fmt.Errorf("Couldn't parse Set\n\t%w", err)
     }
 
     if char == ' ' {
-        newPos++
+        p.Pos++
     }
 
 
@@ -34,14 +34,13 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
     var color string
 
     for {
-        if pos > len(line) {
-            break
-        }
-        num, newPos, err = p.ExpectNumber(line, newPos)
+        _, err = p.ExpectWord("\n")
+        if err != nil && err == parsermod.EOL { break }
+        num, err = p.ExpectNumber()
         if err != nil {
-            return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
+            return 0, 0, 0, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
-        color, newPos, err = p.ExpectOneOf(line, newPos, []string{" red"," blue", " green"})
+        color, err = p.ExpectOneOf([]string{" red"," blue", " green"})
         switch color {
         case " red":
             red = num
@@ -53,22 +52,22 @@ func parseSet(line string, pos int) (int, int, int, int, error) {
             green = num
             break
         }
-        char, newPos, err = p.Peek(line, newPos)
+        char, err = p.Peek()
         if err != nil || char == ';' || char == '\n' {
-            newPos ++;
+            p.Pos++;
             break
         }
-        _, newPos, err = p.ExpectWord(line, newPos, ", ")
+        _, err = p.ExpectWord(", ")
         if err != nil {
-            return 0, 0, 0, newPos, fmt.Errorf("Invalid set: \n\t%s", err.Error())
+            return 0, 0, 0, fmt.Errorf("Invalid set: \n\t%s", err.Error())
         }
     }
 
-    return red, green, blue, newPos, nil
+    return red, green, blue, nil
 
 }
 
-func parseGame(line string) (Game, error) {
+func parseGame(p *parsermod.Parser) (Game, error) {
 	game := Game{
 		id:    0,
 		red:   0,
@@ -77,20 +76,20 @@ func parseGame(line string) (Game, error) {
         power: 0,
 	}
 
-    log.Printf("INFO: parsing line %s", line)
-	_, pos, err := p.ExpectWord(line, 0, "Game ")
+    //log.Printf("INFO: parsing line %s", line)
+	_, err := p.ExpectWord("Game ")
 	if err != nil {
 		return game, errors.New("Invalid line: Not a game data")
 	}
 
-	id, pos, err := p.ExpectNumber(line, pos)
+	id, err := p.ExpectNumber()
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: No game number found\n\t%s", err.Error())
 	}
 	game.id = id
 
 
-    _, pos, err = p.ExpectWord(line, pos, ":")
+    _, err = p.ExpectWord(":")
 	if err != nil {
 		return game, fmt.Errorf("Invalid line: \n\t%s", err.Error())
 	}
@@ -98,9 +97,8 @@ func parseGame(line string) (Game, error) {
     var red, green, blue int
 
     
-    var newPos = pos
     for {
-        red, green, blue, newPos, err = parseSet(line, newPos)
+        red, green, blue, err = parseSet(p)
         //log.Printf("red: %d, green: %d, blue: %d", red, green, blue)
 
         if err != nil {
@@ -130,19 +128,26 @@ func main() {
 	}
 
 	reader := bufio.NewReader(input)
+    parser := parsermod.Parser {
+        Reader: reader,
+    }
 	sum := 0
 	powerSum := int64(0)
 	expectedRed := 12
 	expectedGreen := 13
 	expectedBlue := 14
 
+    var line string
 	for {
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
+        if err != nil && err != parsermod.EOL {
+            log.Fatalf("ERROR: invalid line %s\n%s", line, err.Error())
+
+        }
+        if line, err = parser.ReadNextLine(); err != nil {
 			break
 		}
 
-		game, err := parseGame(string(line))
+		game, err := parseGame(&parser)
 
 		if err != nil {
 			fmt.Println(err)

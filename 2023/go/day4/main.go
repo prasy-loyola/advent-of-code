@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"parser"
+	parsermod "parser"
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	filepath := "input.txt"
 	var input *os.File
 	var err error
@@ -16,58 +17,47 @@ func main() {
 	}
 	reader := bufio.NewReader(input)
 
+	parser := parsermod.Parser{
+		Reader: reader,
+	}
+
 	puzzle1Result := 0
 	winsPerCard := make([]int, 0)
 	copiesPerCard := make([]int, 0)
+	var line string
 	for {
-		var lineBytes []byte
-		pos := 0
-		if lineBytes, err = reader.ReadBytes('\n'); err != nil {
+
+		if err != nil && err != parsermod.EOL {
+			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
+		}
+		if line, err = parser.ReadNextLine(); err == parsermod.EOF {
 			break
 		}
-		line := string(lineBytes)
+
 		cardNumber := 0
 		//Card <card number>:
-		if _, pos, err = parser.ExpectWord(line, pos, "Card"); err != nil {
-			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-		}
-		if pos, err = parser.Skip(line, pos, ' '); err != nil {
-			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-		}
-		if cardNumber, pos, err = parser.ExpectNumber(line, pos); err != nil {
-			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-		}
-		if _, pos, err = parser.ExpectWord(line, pos, ":"); err != nil {
-			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-		}
+		if _         , err = parser.ExpectWord("Card"); err != nil { continue }
+		if _         , err = parser.Skip(' ');          err != nil { continue }
+		if cardNumber, err = parser.ExpectNumber();     err != nil { continue }
+		if _         , err = parser.ExpectWord(":");    err != nil { continue }
 
 		// <winNum1> <winNum2> <winNum3> <winNum4> <winNum5>
 		winningNumbers := [10]int{}
 		for i := 0; i < len(winningNumbers); i++ {
-			if pos, err = parser.Skip(line, pos, ' '); err != nil {
-				log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-			}
 			var num int
-			if num, pos, err = parser.ExpectNumber(line, pos); err != nil {
-				log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-			}
+			if _  , err = parser.Skip(' ');      err != nil { continue }
+			if num, err = parser.ExpectNumber(); err != nil { continue }
 			winningNumbers[i] = num
 		}
 
 		// | <num1> <num2> <num3> <num4> <num5> <num6> <num7> <num8>
 		ourWinningNumbers := 0
 		numbers := [25]int{}
-		if _, pos, err = parser.ExpectWord(line, pos, " |"); err != nil {
-			log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-		}
+		if _, err = parser.ExpectWord(" |"); err != nil { continue }
 		for i := 0; i < len(numbers); i++ {
-			if pos, err = parser.Skip(line, pos, ' '); err != nil {
-				log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-			}
 			var num int
-			if num, pos, err = parser.ExpectNumber(line, pos); err != nil {
-				log.Fatalf("ERROR: Invalid line '%s', \n\t%s", line, err.Error())
-			}
+			if _  , err = parser.Skip(' ');      err != nil { continue }
+			if num, err = parser.ExpectNumber(); err != nil { continue }
 			numbers[i] = num
 
 			for _, n := range winningNumbers {
@@ -110,4 +100,3 @@ func main() {
 	log.Printf("INFO: Puzzle2 result %d", puzzle2Result)
 
 }
-

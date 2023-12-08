@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
-	"parser"
+	parsermod "parser"
 )
 
 type enginePart = struct {
@@ -29,16 +29,21 @@ func main() {
 		panic("Couldn't read the file")
 	}
 	reader := bufio.NewReader(input)
+    parser := parsermod.Parser {
+        Reader: reader,
+    }
 
 	partsGrid := make([][]enginePart, 0)
 	markerGrid := make([][]marker, 0)
 
+    var line string
 	rowNum := 0
 	for {
-		lineBytes, err := reader.ReadBytes('\n')
-		line := string(lineBytes)
+        if err != nil && err != parsermod.EOL {
+            log.Fatalf("ERROR: invalid line %s\n%s", line, err.Error())
+        }
 		//	log.Printf("INFO: processing line %s", line)
-		if err != nil {
+        if line, err = parser.ReadNextLine(); err != nil {
 			break
 		}
 		parts := make([]enginePart, 0)
@@ -47,13 +52,14 @@ func main() {
 		var char byte = 0
 
 		for {
-			if pos, err = parser.Skip(line, pos, '.'); err != nil {
+			if _, err = parser.Skip('.'); err != nil { break }
+			if _, err = parser.Skip('\n'); err != nil {
 				break
 			}
-			if pos, err = parser.Skip(line, pos, '\n'); err != nil {
-				break
-			}
-			if num, newPos, err := parser.ExpectNumber(line, pos); err == nil {
+            pos = parser.Pos
+
+			if num, err := parser.ExpectNumber(); err == nil {
+                newPos := parser.Pos
 				parts = append(parts, enginePart{
 					number: num,
 					start:  pos,
@@ -62,13 +68,13 @@ func main() {
 				})
 				pos = newPos
 			}
-			if char, pos, err = parser.Peek(line, pos); err == nil && char != '.' && char != '\n' {
+			if char, err = parser.Peek(); err == nil && char != '.' && char != '\n' {
 				markers = append(markers, marker{
 					row:        rowNum,
-					position:   pos,
+					position:   parser.Pos,
 					markerType: char,
 				})
-				pos++
+                parser.Pos++
 			}
 		}
 		rowNum++

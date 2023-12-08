@@ -1,95 +1,118 @@
 package parser
+
 import (
-    "errors"
-    "fmt"
+	"bufio"
+	"fmt"
 )
 
 
-func Skip(text string, pos int, char byte) (int, error) {
-	if pos >= len(text) {
-		return pos, fmt.Errorf("No text left")
+
+type ParserError error
+var EOL error = fmt.Errorf("Not enough text in line")
+var EOF error = fmt.Errorf("Not enough text in file")
+type Parser struct {
+    Reader *bufio.Reader
+    Pos int
+    line string
+}
+
+func (p *Parser) ReadNextLine() (string, error) {
+    if line, err := p.Reader.ReadBytes('\n'); err != nil {
+        return "", EOF
+    } else {
+        p.line = string(line)
+        p.Pos = 0
+        return p.line, nil
+    }
+}
+
+func (p *Parser) Skip(char byte) ([]byte, error) {
+	if p.Pos >= len(p.line) {
+		return nil, EOL
 	}
 
-    for ; pos < len(text); pos++ {
-        if text[pos] != char {
+    var bytes = make([]byte,0)
+    for ; p.Pos < len(p.line); p.Pos++ {
+        if p.line[p.Pos] != char {
+            bytes = append(bytes, char)
             break
         }
     }
-
-    return pos, nil
-
+    return bytes, nil
 }
-func ExpectWord(text string, pos int, prefix string) (string, int, error) {
+func (p *Parser) ExpectWord(prefix string) (string, error) {
 
-	if pos >= len(text) || len(prefix) > len(text)+pos {
-		return "", pos, errors.New("Not enough text")
+	if p.Pos >= len(p.line) || len(prefix) > len(p.line)+p.Pos {
+        return "", fmt.Errorf("line: %s, pos:%d,  %w" ,p.line, p.Pos, EOL)
 	}
 
 	for i := 0; i < len(prefix); i++ {
-		if text[i+pos] != prefix[i] {
-            return "", pos, fmt.Errorf("Expected: '%s' but found character: '%c' at pos: '%d'", prefix, text[i+pos], i+pos)
+		if p.line[i+p.Pos] != prefix[i] {
+            return "", fmt.Errorf("Expected: '%s' but found character: '%c' at pos: '%d'", prefix, p.line[i+p.Pos], i+p.Pos)
 		}
 	}
+
+    p.Pos += len(prefix)
 
 	//log.Printf("INFO: found word '%s' at %d", prefix, pos)
 
-	return prefix, pos + len(prefix), nil
+	return prefix, nil
 }
 
-func ExpectOneOf(text string, pos int, options []string) (string, int, error) {
+func (p *Parser) ExpectOneOf(options []string) (string, error) {
 
 	for _, option := range options {
-		if _, newPos, err := ExpectWord(text, pos, option); err == nil {
-			return option, newPos, err
+		if _, err := p.ExpectWord(option); err == nil {
+			return option, err
 		}
 	}
-	return text, pos, nil
+	return "", nil
 }
 
-func ExpectCharBetween(text string, pos int, low byte, high byte) (byte, int, error) {
+func (p *Parser) ExpectCharBetween(low byte, high byte) (byte, error) {
 
-	if pos >= len(text) {
-		return 0, pos, errors.New("No text left")
+	if p.Pos >= len(p.line) {
+		return 0, EOL
 	}
-	char := text[pos]
+	char := p.line[p.Pos]
 
 	if char < low || char > high {
-		return char, pos, fmt.Errorf("Expected Number but found '%c'", char)
+		return char, fmt.Errorf("Expected character between %c-%c but found '%c'",low, high, char)
 	}
-
+    p.Pos++
 	//log.Printf("INFO: found char '%c' at %d", char, pos)
-	return char, pos + 1, nil
+	return char, nil
 }
 
-func ExpectNumber(text string, pos int) (int, int, error) {
+func (p *Parser) ExpectNumber() (int, error) {
 	num := 0
 
-	if pos >= len(text) {
-		return 0, pos, errors.New("No text left")
+	if p.Pos >= len(p.line) {
+		return 0, EOL
 	}
 
-	char, newPos, err := ExpectCharBetween(text, pos, '0', '9')
+	char, err := p.ExpectCharBetween('0', '9')
 	if err != nil {
-		return 0, pos, err
+		return 0, err
 	}
 	num = num*10 + int(char-'0')
 
 	for {
-		char, newPos, err = ExpectCharBetween(text, newPos, '0', '9')
+		char, err = p.ExpectCharBetween('0', '9')
 		if err != nil {
 			break
 		}
 		num = num*10 + int(char-'0')
 	}
 
-	return num, newPos, nil
+	return num, nil
 }
 
 
-func Peek(line string, pos int) (byte, int, error) {
-    if pos >= len(line) {
-        return 0, pos, fmt.Errorf("Not enough text")
+func (p *Parser) Peek() (byte, error) {
+    if p.Pos >= len(p.line) {
+        return 0, EOL
     }
-    return line[pos], pos, nil
+    return p.line[p.Pos], nil
 
 }
