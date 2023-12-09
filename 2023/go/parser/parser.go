@@ -116,3 +116,35 @@ func (p *Parser) Peek() (byte, error) {
     return p.line[p.Pos], nil
 
 }
+
+func (p *Parser) ExpectListOfNumbers(delim byte) ([]int, error) {
+
+	var err error
+	result := make([]int, 0)
+
+	for {
+		if _, err = p.Skip(delim); err != nil {
+			break
+		}
+		var num int
+		if num, err = p.ExpectNumber(); err != nil {
+			break
+		}
+		result = append(result, num)
+	}
+	return result, nil
+}
+
+func (p *Parser) ReadString(delim byte) (string, error) {
+    var result string
+    for {
+        if char, err := p.Peek(); err != nil || char == delim {
+            break
+        } else {
+            result = result + string(char)
+            p.Pos++
+        }
+    }
+    return result, nil
+}
+
