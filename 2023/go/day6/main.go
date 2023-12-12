@@ -2,19 +2,21 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"math"
 	"os"
 	parsermod "parser"
+	"strconv"
 )
 
-func solveQuadratic(totalTime, winningDistance int) (int, int) {
+func solveQuadratic(totalTime, winningDistance int64) (int64, int64) {
 
 	quadPart := math.Sqrt(float64(totalTime*totalTime - 4*winningDistance))
-	solution1 := int((float64(totalTime) - quadPart) / 2.0)
-	solution2 := int((float64(totalTime) + quadPart) / 2.0)
+	solution1 := int64((float64(totalTime) - quadPart) / 2.0)
+	solution2 := int64((float64(totalTime) + quadPart) / 2.0)
 
-	isWinning := func(holdTime int) bool {
+	isWinning := func(holdTime int64) bool {
 		dist := (totalTime - holdTime) * holdTime
 		return dist > winningDistance
 	}
@@ -32,7 +34,7 @@ func solveQuadratic(totalTime, winningDistance int) (int, int) {
 		solution2 += 1
 	}
 
-	return int(solution1), int(solution2)
+	return int64(solution1), int64(solution2)
 }
 
 func main() {
@@ -68,13 +70,25 @@ func main() {
 
 	log.Printf("INFO: time: %v, distance:%v", time, distance)
 
-	puzzle1Result := 1
+	puzzle1Result := int64(1)
+    puzzle2Time := ""
+    puzzle2Distance := ""
 	for i := 0; i < len(time); i++ {
-		sol1, sol2 := solveQuadratic(time[i], distance[i])
+        puzzle2Time = fmt.Sprint(puzzle2Time, time[i])
+        puzzle2Distance = fmt.Sprint(puzzle2Distance, distance[i])
+		sol1, sol2 := solveQuadratic(int64(time[i]), int64(distance[i]))
 		log.Printf("INFO: solution for %d , time: %d, distance: %d, is [%d, %d]", i, time[i], distance[i], sol1, sol2)
 		puzzle1Result *= (sol2 - sol1 + 1)
 	}
 
-    log.Printf("INFO: puzzle1Result %d" , puzzle1Result)
+    log.Printf("INFO: puzzle1Result: %d" , puzzle1Result)
+    log.Printf("INFO: puzzle2Time: %s, puzzle2Distance: %s" , puzzle2Time, puzzle2Distance)
+
+    puzzle2TimeI, _ := strconv.ParseInt(puzzle2Time, 10, 64)
+    puzzle2DistanceI, _ := strconv.ParseInt(puzzle2Distance, 10, 64)
+	sol1, sol2 := solveQuadratic(puzzle2TimeI, puzzle2DistanceI)
+    puzzle2Result := sol2 - sol1 + 1
+    log.Printf("INFO: puzzle2Result: %d" , puzzle2Result)
+
 
 }
