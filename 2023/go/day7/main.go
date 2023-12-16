@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	parsermod "parser"
 )
@@ -37,24 +38,10 @@ type Hand struct {
 	cards string
 	bid   int
 	typ   HandType
+	typ2  HandType
 }
 
-func getHandType(hand string) HandType {
-
-	freq := make(map[byte]int)
-
-	for i := 0; i < len(hand); i++ {
-		if val, ok := freq[hand[i]]; !ok {
-			freq[hand[i]] = 1
-		} else {
-			freq[hand[i]] = val + 1
-		}
-	}
-
-	freqmap := [6]int{}
-	for _, v := range freq {
-		freqmap[v] += 1
-	}
+func getHandTypeFromFreqMap(freqmap [6]int) HandType {
 
 	if freqmap[5] > 0 {
 		return FiveOfaKind
@@ -75,8 +62,141 @@ func getHandType(hand string) HandType {
 		return OnePair
 	}
 	return HighCard
+
+}
+func getHandType2(hand string) HandType {
+
+	freq := make(map[byte]int)
+
+	for i := 0; i < len(hand); i++ {
+		if val, ok := freq[hand[i]]; !ok {
+			freq[hand[i]] = 1
+		} else {
+			freq[hand[i]] = val + 1
+		}
+	}
+	freqmap := [6]int{}
+
+    if jokers, ok := freq['J']; ok {
+	    maxFreq := 0
+        maxFreqChar := byte('J')
+	    for c, v := range freq {
+	    	if c != 'J' {
+                if v > maxFreq {
+                    maxFreq = v
+                    maxFreqChar = c
+                }
+	    	}
+	    }
+        if maxFreqChar != 'J' {
+            freq[maxFreqChar] += jokers
+            freq['J'] = 0
+        }
+    }
+
+	for _, v := range freq {
+		freqmap[v] += 1
+	}
+
+	return getHandTypeFromFreqMap(freqmap)
+
 }
 
+func getHandType(hand string) HandType {
+
+	freq := make(map[byte]int)
+
+	for i := 0; i < len(hand); i++ {
+		if val, ok := freq[hand[i]]; !ok {
+			freq[hand[i]] = 1
+		} else {
+			freq[hand[i]] = val + 1
+		}
+	}
+
+	freqmap := [6]int{}
+	for _, v := range freq {
+		freqmap[v] += 1
+	}
+
+	return getHandTypeFromFreqMap(freqmap)
+}
+
+func less2(hands []Hand) func(i, j int) bool {
+	lessFunc := func(i, j int) bool {
+		hi := hands[i]
+		hj := hands[j]
+		if hi.typ2 != hj.typ2 {
+			return hi.typ2 > hj.typ2
+		}
+		valueOf := func(c byte) int {
+			if c > '1' && c <= '9' {
+				return int(c - '0')
+			}
+			switch c {
+			case 'T':
+				return 10
+			case 'J':
+				return 1
+			case 'Q':
+				return 12
+			case 'K':
+				return 13
+			case 'A':
+				return 14
+			}
+			return -1
+		}
+		for i = 0; i < 5; i++ {
+			ival := valueOf(hi.cards[i])
+			jval := valueOf(hj.cards[i])
+			if ival == jval {
+				continue
+			}
+			return ival < jval
+		}
+		return false
+	}
+	return lessFunc
+}
+
+func less1(hands []Hand) func(i, j int) bool {
+	lessFunc := func(i, j int) bool {
+		hi := hands[i]
+		hj := hands[j]
+		if hi.typ != hj.typ {
+			return hi.typ > hj.typ
+		}
+		valueOf := func(c byte) int {
+			if c > '1' && c <= '9' {
+				return int(c - '0')
+			}
+			switch c {
+			case 'T':
+				return 10
+			case 'J':
+				return 11
+			case 'Q':
+				return 12
+			case 'K':
+				return 13
+			case 'A':
+				return 14
+			}
+			return -1
+		}
+		for i = 0; i < 5; i++ {
+			ival := valueOf(hi.cards[i])
+			jval := valueOf(hj.cards[i])
+			if ival == jval {
+				continue
+			}
+			return ival < jval
+		}
+		return false
+	}
+	return lessFunc
+}
 func main() {
 	fmt.Println("Hello World!")
 	filepath := "input.txt"
@@ -116,52 +236,28 @@ func main() {
 			cards: cards,
 			bid:   bid,
 			typ:   getHandType(cards),
+			typ2:  getHandType2(cards),
 		})
 	}
 
-	sort.Slice(hands, func(i, j int) bool {
-		hi := hands[i]
-		hj := hands[j]
-		if hi.typ != hj.typ {
-			return hi.typ > hj.typ
-		}
-		valueOf := func(c byte) int {
-			if c > '1' && c <= '9' {
-				return int(c - '0')
-			}
-			switch c {
-			case 'T':
-				return 10
-			case 'J':
-				return 11
-			case 'Q':
-				return 12
-			case 'K':
-				return 13
-			case 'A':
-				return 14
-			}
-			return -1
-		}
-		for i = 0; i < 5; i++ {
-			ival := valueOf(hi.cards[i])
-			jval := valueOf(hj.cards[i])
-			if ival == jval {
-				continue
-			}
-			return ival < jval
-		}
-		return false
-	})
+	sort.Slice(hands, less1(hands))
 
 	//log.Printf("INFO: Hands %v", hands)
 
+	puzzle1Result := 0
+	for i, hand := range hands {
+		puzzle1Result += hand.bid * (i + 1)
+	}
 
-    puzzle1Result := 0
+	sort.Slice(hands, less2(hands))
 
-    for i, hand := range hands {
-        puzzle1Result += hand.bid * (i+1)
-    }
+	//log.Printf("INFO: Hands %v", hands)
 
-    log.Printf("INFO: puzzle1Result %d", puzzle1Result)
+	puzzle2Result := 0
+	for i, hand := range hands {
+		puzzle2Result += hand.bid * (i + 1)
+	}
+
+	log.Printf("INFO: puzzle1Result %d", puzzle1Result)
+	log.Printf("INFO: puzzle2Result %d", puzzle2Result)
 }
